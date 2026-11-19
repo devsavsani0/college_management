@@ -4,12 +4,26 @@ import os
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security settings (development only)
+# Security settings
 SECRET_KEY = 'django-insecure-college-management-development-key-2026'
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in [
+        *os.environ.get('ALLOWED_HOSTS', '').split(','),
+        os.environ.get('VERCEL_URL', ''),
+        os.environ.get('VERCEL_PROJECT_PRODUCTION_URL', ''),
+        'college-management-pearl-seven.vercel.app',
+        '127.0.0.1',
+        'localhost',
+    ]
+    if host.strip()
+]
+
+if os.environ.get('VERCEL'):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Installed applications
