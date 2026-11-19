@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block title %}Students | EduManage{% endblock %}
+{% block content %}<div class="page-heading"><div><h1>Students</h1><p>Manage student records</p></div><a class="btn" href="{% url 'student_add' %}">+ Add Student</a></div>
+<div class="card"><form style="margin-bottom:16px" method="get"><input name="q" value="{{ query|default:'' }}" placeholder="Search students..." style="width:300px;padding:10px;border:1px solid var(--line);border-radius:8px"></form><table><thead><tr><th>Student ID</th><th>Name</th><th>Email</th><th>Department</th><th>Year</th><th>Status</th></tr></thead><tbody>{% for s in students %}<tr><td>{{ s.student_id }}</td><td>{{ s.name }}</td><td>{{ s.email }}</td><td>{{ s.department }}</td><td>{{ s.year }}</td><td><span class="badge">{{ s.status }}</span></td></tr>{% empty %}<tr><td colspan="6" class="empty">No students found</td></tr>{% endfor %}</tbody></table></div>{% endblock %}

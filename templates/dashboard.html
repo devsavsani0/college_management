@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | EduManage{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Dashboard</h1><p>Welcome back! Here's what's happening today.</p></div></div>
+<div class="stats">
+  <div class="stat-card"><div class="stat-icon" style="background:#edf3ff;color:#4b74ff">👥</div><div><h3>{{ student_count }}</h3><p>Total Students</p></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#fff1dc;color:#ed9b34">♙</div><div><h3>{{ faculty_count }}</h3><p>Total Faculty</p></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#edf8f5;color:#24a69a">▤</div><div><h3>{{ course_count }}</h3><p>Active Courses</p></div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#f2edff;color:#805ad5">✓</div><div><h3>{{ attendance_count }}</h3><p>Attendance Records</p></div></div>
+</div>
+<div class="grid-two">
+  <div class="card"><h2>Recent Students</h2><table><thead><tr><th>Student ID</th><th>Name</th><th>Department</th><th>Status</th></tr></thead><tbody>{% for student in students %}<tr><td>{{ student.student_id }}</td><td>{{ student.name }}</td><td>{{ student.department }}</td><td><span class="badge">{{ student.status }}</span></td></tr>{% empty %}<tr><td colspan="4" class="empty">No students yet</td></tr>{% endfor %}</tbody></table></div>
+  <div class="card"><h2>Recent Attendance</h2><table><thead><tr><th>Student</th><th>Course</th><th>Status</th></tr></thead><tbody>{% for record in recent_attendance %}<tr><td>{{ record.student.name }}</td><td>{{ record.course.code }}</td><td><span class="badge">{{ record.status }}</span></td></tr>{% empty %}<tr><td colspan="3" class="empty">No records yet</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}
