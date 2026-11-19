@@ -1,11 +1,20 @@
 from pathlib import Path
 import os
+from urllib.parse import parse_qs, unquote, urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_URL'))
+
 # Security settings
-SECRET_KEY = 'django-insecure-college-management-development-key-2026'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if IS_VERCEL:
+        raise ImproperlyConfigured('Set SECRET_KEY in the Vercel project environment.')
+    SECRET_KEY = 'django-insecure-college-management-development-key-2026'
 
 DEBUG = os.environ.get('DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
 
@@ -22,7 +31,7 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
-if os.environ.get('VERCEL'):
+if IS_VERCEL:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
@@ -47,6 +56,7 @@ INSTALLED_APPS = [
 # Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,9 +91,42 @@ TEMPLATES = [
 WSGI_APPLICATION = 'college_management.wsgi.application'
 
 
-# Database: PostgreSQL when DB_PASSWORD is configured; SQLite for local setup otherwise.
+# Database: use a hosted PostgreSQL URL in production; SQLite for local setup otherwise.
+DATABASE_URL = (
+    os.environ.get('DATABASE_URL')
+    or os.environ.get('POSTGRES_URL_NON_POOLING')
+    or os.environ.get('POSTGRES_URL')
+)
 DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
-if DB_PASSWORD:
+if DATABASE_URL:
+    parsed_database_url = urlparse(DATABASE_URL)
+    if (
+        parsed_database_url.scheme not in {'postgres', 'postgresql'}
+        or not parsed_database_url.hostname
+        or not parsed_database_url.path.strip('/')
+    ):
+        raise ImproperlyConfigured(
+            'DATABASE_URL must be a PostgreSQL URL with a database name.'
+        )
+    DATABASE_OPTIONS = {}
+    sslmode = parse_qs(parsed_database_url.query).get('sslmode', [None])[0]
+    if sslmode:
+        DATABASE_OPTIONS['sslmode'] = sslmode
+    elif IS_VERCEL:
+        DATABASE_OPTIONS['sslmode'] = 'require'
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote(parsed_database_url.path.lstrip('/')),
+            'USER': unquote(parsed_database_url.username or ''),
+            'PASSWORD': unquote(parsed_database_url.password or ''),
+            'HOST': parsed_database_url.hostname or '',
+            'PORT': parsed_database_url.port or '5432',
+            'OPTIONS': DATABASE_OPTIONS,
+        }
+    }
+elif DB_PASSWORD and not IS_VERCEL:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -94,6 +137,10 @@ if DB_PASSWORD:
             'PORT': '5432',
         }
     }
+elif IS_VERCEL:
+    raise ImproperlyConfigured(
+        'Set DATABASE_URL or POSTGRES_URL in Vercel; SQLite is not writable or persistent there.'
+    )
 else:
     DATABASES = {
         'default': {
@@ -136,6 +183,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
+WHITENOISE_USE_FINDERS = True
 
 
 # Media files
